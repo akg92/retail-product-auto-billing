@@ -3,7 +3,7 @@ import json
 class Configuration:
 
 
-    def __init__(self,type):
+    def __init__(self,type=None):
         if not type:
             type="gdrive"
         self.type = type
