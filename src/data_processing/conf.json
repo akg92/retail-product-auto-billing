@@ -1,0 +1,8 @@
+{
+
+  "gdrive": {
+    "data_dir": "./data",
+    "train_old_dir": "./data/test2019",
+    "train_dir": "./data/train"
+  }
+}
