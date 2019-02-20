@@ -12,7 +12,7 @@
  
  ## Git mapping
  ```
- !git clone https://github.com/akg92/retail-product-auto-billing data
+ !git clone https://github.com/akg92/retail-product-auto-billing data/code
 import sys
 sys.path.append('./data/code/src/data_processing')
 
