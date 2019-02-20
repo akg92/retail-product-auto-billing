@@ -11,8 +11,8 @@ class Configuration:
             type="gdrive"
         self.type = type
         with open(conf_path,'r') as f:
-            json.load(f)
-            self.conf = f[type]
+            json_obj = json.load(f)
+            self.conf = json_obj[type]
 
 
 
