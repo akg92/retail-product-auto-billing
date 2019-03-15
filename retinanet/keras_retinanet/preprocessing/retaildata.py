@@ -40,6 +40,20 @@ class RetailGenerator(Generator):
             except:
                 pass
 
+        """
+            Move the image files
+        """
+        image_path = os.path.join(data_dir,'images')
+        try:
+            os.mkdir(image_path)
+            files = ['test2019','train2019','val2019']
+            for file_name in files:
+                file = os.path.join(data_dir,file_name)
+                shutil.move(file,image_path)
+        except:
+            pass
+
+
 
 
     def __init__(self, data_dir, set_name, **kwargs):
