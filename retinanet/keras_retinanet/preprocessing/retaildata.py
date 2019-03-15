@@ -5,7 +5,7 @@ contact: shibintv@tamu.edu
 
 from ..preprocessing.generator import Generator
 from ..utils.image import read_image_bgr
-
+import shutil
 import os
 import numpy as np
 
@@ -24,7 +24,23 @@ class RetailGenerator(Generator):
     
     """
     def remap_data(self,data_dir):
-        pass
+        ## The retail data has a different sturucture. make directory and copy the files
+        annotation_dir = os.path.join(data_dir,"annotations")
+        try:
+            os.mkdir(annotation_dir)
+        except:
+            pass
+
+        json_files = ['inctances_test2010.json','inctances_train2010.json','inctances_val2010.json']
+
+        for file_name in json_files:
+            file = os.path.join(data_dir,file_name)
+            try:
+                shutil.copy(file,annotation_dir)
+            except:
+                pass
+
+
 
     def __init__(self, data_dir, set_name, **kwargs):
         """ Initialize a COCO data generator.
