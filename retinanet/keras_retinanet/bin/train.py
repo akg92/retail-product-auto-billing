@@ -268,7 +268,7 @@ def create_generators(args, preprocess_image):
         )
 
         validation_generator = RetailGenerator(
-            args.coco_path,
+            args.retail_path,
             'val2019',
             **common_args
         )
