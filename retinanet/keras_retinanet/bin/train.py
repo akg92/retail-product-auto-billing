@@ -261,7 +261,7 @@ def create_generators(args, preprocess_image):
         from ..preprocessing.retaildata import RetailGenerator
 
         train_generator = RetailGenerator(
-            args.coco_path,
+            args.retail_path,
             'train2019',
             transform_generator=transform_generator,
             **common_args
@@ -383,6 +383,9 @@ def parse_args(args):
 
     coco_parser = subparsers.add_parser('coco')
     coco_parser.add_argument('coco_path', help='Path to dataset directory (ie. /tmp/COCO).')
+    retail_parser = subparsers.add_parser('retail')
+    retail_parser.add_argument('retail_path', help='Path to dataset directory (ie. /tmp/COCO).')
+
 
     pascal_parser = subparsers.add_parser('pascal')
     pascal_parser.add_argument('pascal_path', help='Path to dataset directory (ie. /tmp/VOCdevkit).')
