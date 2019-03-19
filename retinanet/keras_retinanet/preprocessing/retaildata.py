@@ -31,13 +31,14 @@ class RetailGenerator(Generator):
         except:
             pass
 
-        json_files = ['inctances_test2010.json','inctances_train2010.json','inctances_val2010.json']
+        json_files = ['instances_test2019.json','instances_train2019.json','instances_val2019.json']
 
         for file_name in json_files:
             file = os.path.join(data_dir,file_name)
             try:
                 shutil.copy(file,annotation_dir)
             except:
+                print("error in copying file {}".format(file_name))
                 pass
 
         """
@@ -51,6 +52,7 @@ class RetailGenerator(Generator):
                 file = os.path.join(data_dir,file_name)
                 shutil.move(file,image_path)
         except:
+            print("error in copying file {}".format(image_path))
             pass
 
 
