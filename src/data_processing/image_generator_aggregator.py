@@ -421,13 +421,13 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
             final_json['info'] = annotation.dataset['info']
             final_json['licenses'] = annotation.dataset['licenses']
             final_json['categories'] = annotation.dataset['categories']
-            json_location = os.path.join(dest_dir,'annotation_{}_{}.json'.format(counter,t_id))
+            json_location = os.path.join(dest_dir,'annotation_{}.json'.format(counter))
             with open(json_location,'w') as f:
                 json.dump(final_json,f)
 
 
     ## save the annotation file
-    json_location = os.path.join(dest_dir,'annotation_{}.json'.format(t_id))
+    json_location = os.path.join(dest_dir,'annotation.json')
     with open(json_location,'w') as f:
        # import json
         json.dump(final_json,f)
@@ -467,15 +467,23 @@ def merge_annotations(src_dir):
     final_json['images'] = []
     final_json['annotations'] = []
     for file in os.listdir(src_dir):
-        if 'json' in files:
-            cmps = files.split('_')
-            if len(cmps)==2:
+        #print(file)
+        if 'json' in file:
+            #print(file)
+            cmps = file.split('_')
+            if len(cmps)==2 and cmps[0]=='annotation':
+                print(file)
                 with open(os.path.join(src_dir,file)) as f:
+                  
                     temp_json = json.load(f)
                     final_json['info'] = temp_json['info']
-                    final_json['licenses'] = temp_json['licencses']
-                    final_json['images'] += temp_json['images']
-                    final_json['annotations'] += temp_json['annotations']
+                    final_json['licenses'] = temp_json['licenses']
+                    for ele in temp_json['annotations']:
+                        final_json['images'].append(ele)
+                    for ele in temp_json['images']:
+                        for e in ele:
+                            final_json['annotations'].append(e)
+                    #final_json['annotations'].extend(temp_json['images'])
                     final_json['categories'] = temp_json['categories']
 
     with open(os.path.join(src_dir,'instances_train2019.json'),'w') as f:
@@ -518,16 +526,17 @@ if __name__ == '__main__':
         import sys
         sys.exit(-1)
     annotaion_file = '/home/shibinstv/raw-data/annotations/instances_test2019.json'
-    img_dest_dir = '/home/shibinstv/raw_new/train20199'
-    annotation = annotation = load_annotations(annotaion_file)
+    img_dest_dir = '/home/shibinstv/raw_new/images/train2019'
+    #annotation = annotation = load_annotations(annotaion_file)
     #do_preprocessing_all_image(annotaion_file,src_dir,dest_dir)
-    n_image_to_create = 10000
-    all_process = []
-    for i in range(16):
-        th = Process(target=create_merged_images,args=(n_image_to_create,annotation,dest_dir,img_dest_dir,str(i)))
-        th.start()
-        all_process.append(th)
-    for th in all_process:
-        th.join()
+    #n_image_to_create = 16000
+    #all_process = []
+    #for i in range(16):
+    #    th = Process(target=create_merged_images,args=(n_image_to_create,annotation,dest_dir,img_dest_dir,str(i)))
+    #    th.start()
+    #    all_process.append(th)
+    #for th in all_process:
+    #    th.join()
 
-
+    
+    merge_annotations(img_dest_dir)
