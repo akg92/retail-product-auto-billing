@@ -214,8 +214,8 @@ def find_next_placement(cur_image,merging_img,cur_x,cur_y,max_overlap=2500):
     img_dim_x,img_dim_y = cur_image.shape[0],cur_image.shape[1]
     n,m,rgb = merging_img.shape ## merging image
     max_overlap_one_dir = int(math.sqrt(max_overlap))
-    cur_x = max(0,cur_x+np.random.randint(low=-1*max_overlap_one_dir,high=max_overlap_one_dir)) ## create randomness in placement. That is congestion
-    cur_y =max(0,cur_y+np.random.randint(low=-1*max_overlap_one_dir,high=max_overlap_one_dir))
+    cur_x = max(0,cur_x+np.random.RandomState().randint(low=-1*max_overlap_one_dir,high=max_overlap_one_dir)) ## create randomness in placement. That is congestion
+    cur_y =max(0,cur_y+np.random.RandomState().randint(low=-1*max_overlap_one_dir,high=max_overlap_one_dir))
 
     ## scan through the y dimension.
 
@@ -234,16 +234,17 @@ def find_next_placement(cur_image,merging_img,cur_x,cur_y,max_overlap=2500):
 """
 import time
 IMG_ID = 1
-def get_generated_id():
+def get_generated_id(v,lock):
+   
     lock.acquire()
-    global IMG_ID
-    IMG_ID += 1
+    v.value +=1
+    temp = v.value
     lock.release()
-    return IMG_ID
+    return temp
 
-def create_image_metadata(height,width):
+def create_image_metadata(height,width,v,lock):
     file_name =   str(int(round(time.time() * 1000)))+str(np.random.randint(0,10))+".jpg"
-    id = get_generated_id()
+    id = get_generated_id(v,lock)
     img_metadata = {
         "license": 4,
         "file_name": file_name,
@@ -259,11 +260,11 @@ def create_image_metadata(height,width):
 def generate_annotaion(id,bbox,category_id):
 
     annotation ={
-        "segmentation": [[204.01, 306.23,206.53, 307.95]],
+        "segmentation": [[]],
         "num_keypoints": 15,
         "area": 5463.6864,
         "iscrowd": 0,
-        "keypoints": [229, 256, 2, 223, 369, 2],
+        "keypoints": [],
         "image_id": id,
         "bbox": bbox,
         "category_id": category_id,
@@ -278,29 +279,34 @@ def generate_annotaion(id,bbox,category_id):
     create the random images from sample images
 """
 IMG_SHAPE = (1800,1800,3)
-def merge_images(n,all_ids,src_dir,dest_dir,annotations,final_annotations,final_images,t_id,allowed_overlap=2500):
+def merge_images(n,all_ids,src_dir,dest_dir,annotations,final_images,final_annotations,t_id,v,lock,allowed_overlap=2500):
 
     size = len(all_ids)
-    random_index = np.random.randint(0,size,size=n) # generate n items
+    random_index = np.random.RandomState().randint(0,size,size=n) # generate n items
     np_img_array = np.zeros((IMG_SHAPE))
     np_img_array.fill(-1) # all the value is filled with pure white.
     retain_image_ratio = 0.4 ## 40% chance you retain
     first = True
 
     start_x,start_y=50,50
-    img_metadata = create_image_metadata(IMG_SHAPE[0],IMG_SHAPE[1]) ## global metadata
+    img_metadata = create_image_metadata(IMG_SHAPE[0],IMG_SHAPE[1],v,lock) ## global metadata
     img_metadata['file_name']=t_id+img_metadata['file_name']
     generated_annotations = []
     remaining_positions = generate_inital_positions() ## generate all postions.
+    img_id = 0 
+    category_id = 0 
+    src_file_name = None
     for index in random_index:
-        img_id = all_ids[index]
-        retain_flip = np.random.random() ## retain the same image
-        category_id = annotation.imgToAnns[img_id][0]['category_id']
+        #img_id = all_ids[index]
+        retain_flip = np.random.RandomState().random_sample() ## retain the same image
+        #category_id = annotation.imgToAnns[img_id][0]['category_id']
         if retain_flip>retain_image_ratio or first:
+            img_id = all_ids[index]
             old_file_name = annotations.imgs[img_id]['file_name']
             src_file_name = create_temp_file_name(img_id,old_file_name,src_dir)## create the cropped file path.
             first = False
-
+            category_id = annotation.imgToAnns[img_id][0]['category_id']
+    
         ## extra check for test environment
         if not os.path.exists(src_file_name):
             #print("file is not available {} for merging".format(src_file_name))
@@ -345,7 +351,8 @@ def merge_images(n,all_ids,src_dir,dest_dir,annotations,final_annotations,final_
         start_x, start_y = t_start_x,t_start_y
         #print('{},{}.{}.{}'.format(start_x,start_x+merging_img.shape[0],start_y,start_y+merging_img.shape[1]))
         np_img_array[start_x:start_x+merging_img.shape[0],start_y:start_y+merging_img.shape[1]] = merging_img
-        bbox = [start_x,start_y,merging_img.shape[0],merging_img.shape[1]]
+        #bbox = [start_x,start_y,merging_img.shape[0],merging_img.shape[1]]
+        bbox = [start_y,start_x,merging_img.shape[1],merging_img.shape[0]]
         generated_annotations.append(generate_annotaion(img_metadata['id'],bbox,category_id))
 
     ## remove -1 t0 255. This actually take care of the coversion.
@@ -367,8 +374,8 @@ def merge_images(n,all_ids,src_dir,dest_dir,annotations,final_annotations,final_
     Generate all positions 
 """
 def generate_inital_positions(avg_image_height=250,avg_image_width=150):
-    start_x = np.random.randint(0,100,1)
-    start_y = np.random.randint(0, 100, 1)
+    start_x = np.random.RandomState().randint(0,100,1)
+    start_y = np.random.RandomState().randint(0, 100, 1)
     all_positions = []
     for i in range(start_x,IMG_SHAPE[0],avg_image_height):
         for j in range(start_y,IMG_SHAPE[1],avg_image_width):
@@ -384,10 +391,10 @@ def generate_next_position(remaining_postions):
     if len(remaining_postions)==0:
         return -1
     else:
-        return np.random.randint(0,len(remaining_postions)) # randomly opt one position
+        return np.random.RandomState().randint(0,len(remaining_postions)) # randomly opt one position
 
 
-def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_n=3,high_cat_n=10):
+def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,v,lock,lowest_cat_n=3,high_cat_n=10):
     max_category = 200
 
 
@@ -397,12 +404,13 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
 
     start = int(time.time()*1000)
     counter = 1
+    final_json = {}
     for i in range(n_generate):
-        n = np.random.randint(lowest_cat_n,21)
+        n = np.random.RandomState().randint(lowest_cat_n,21)
         while(threading.active_count()>4):
             pass
         
-        th = threading.Thread(target= merge_images, args=(n,all_ids,src_dir,dest_dir,annotation,generated_img_metadatas,generated_annotations,t_id))
+        th = threading.Thread(target= merge_images, args=(n,all_ids,src_dir,dest_dir,annotation,generated_img_metadatas,generated_annotations,t_id,v,lock))
         th.start()
         th.join()
         counter+=1
@@ -414,8 +422,8 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
         ## save generated image file
         #generated_location = os.path.join(dest_dir,generated_img_metadata['file_name'])
         #cv2.imwrite(generated_location,generated_img)
-        if not counter%1000:
-            final_json = {}
+        if not  counter%1000:
+            #final_json = {}
             final_json['images'] = generated_img_metadatas
             final_json['annotations'] = generated_annotations
             final_json['info'] = annotation.dataset['info']
@@ -427,14 +435,14 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
 
 
     ## save the annotation file
-    json_location = os.path.join(dest_dir,'annotation_{}.json'.format(t_id))
-    with open(json_location,'w') as f:
+    #json_location = os.path.join(dest_dir,'annotation_{}.json'.format(t_id))
+    #with open(json_location,'w') as f:
        # import json
-        json.dump(final_json,f)
+    #    json.dump(final_json,f)
 
 
     ## create all
-    time.sleep(600)# sleep 10 minutes to commit all jobs.
+    #time.sleep()# sleep 10 minutes to commit all jobs.
     final_json = {}
     final_json['images'] = generated_img_metadatas
     final_json['annotations'] = generated_annotations
@@ -443,7 +451,7 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
     final_json['categories'] = annotation.dataset['categories']
 
     ## save the annotation file
-    json_location = os.path.join(dest_dir,t_id+'annotation.json')
+    json_location = os.path.join(dest_dir,'annotation_{}.json'.format(t_id))
     with open(json_location,'w') as f:
         #import json
         json.dump(final_json,f)
@@ -461,7 +469,7 @@ def create_merged_images(n_generate,annotation,src_dir,dest_dir,t_id,lowest_cat_
 
 
 
-def merge_annotations(src_dir):
+def merge_annotation_(src_dir):
 
     final_json = {}
     final_json['images'] = []
@@ -509,25 +517,61 @@ def do_preprocessing_all_image(annotation_file,src_dir,dest_dir):
     # print(annotation.imgs[1])
     # cut_image(id, image_file, '/home/shibin/Downloads/',annotation)
 
+from multiprocessing import Value,Lock
+def merge_annotations(src_dir):
+
+    final_json = {}
+    final_json['images'] = []
+    final_json['annotations'] = []
+    counter = 0 
+    for file in os.listdir(src_dir):
+        #print(file)
+        if 'json' in file:
+            #print(file)
+            cmps = file.split('_')
+            if len(cmps)==2 and cmps[0]=='annotation':
+                print(file)
+                with open(os.path.join(src_dir,file)) as f:
+
+                    temp_json = json.load(f)
+                    #print(temp_json['annotations'])
+                    final_json['info'] = temp_json['info']
+                    final_json['licenses'] = temp_json['licenses']
+                    for ele in temp_json['images']:
+                        final_json['images'].append(ele)
+                    for ele in temp_json['annotations']:
+                        for e in ele:
+                            counter += 1
+                            e['id'] = counter 
+                            final_json['annotations'].append(e)
+                    #final_json['annotations'].extend(temp_json['images'])
+                    final_json['categories'] = temp_json['categories']
+
+    with open(os.path.join(src_dir,'instances_train2019.json'),'w') as f:
+        json.dump(final_json,f)
+
+
 
 if __name__ == '__main__':
-    src_dir = '/home/shibinstv/raw-data/images/test2019/'
+    src_dir = '/home/shibinstv/raw_data/images/train2019/'
     dest_dir = '/home/shibinstv/raw_new/created'
     if not os.path.exists(dest_dir):
         print('create dest dir')
         import sys
         sys.exit(-1)
-    annotaion_file = '/home/shibinstv/raw-data/annotations/instances_test2019.json'
+    annotaion_file = '/home/shibinstv/raw_data/annotations/instances_train2019.json'
     img_dest_dir = '/home/shibinstv/raw_new/train20199'
     annotation = annotation = load_annotations(annotaion_file)
     #do_preprocessing_all_image(annotaion_file,src_dir,dest_dir)
-    n_image_to_create = 10000
+    n_image_to_create = 4000
     all_process = []
-    for i in range(16):
-        th = Process(target=create_merged_images,args=(n_image_to_create,annotation,dest_dir,img_dest_dir,str(i)))
+    v = Value('i',0)
+    lock = Lock()
+    for i in range(32):
+        th = Process(target=create_merged_images,args=(n_image_to_create,annotation,dest_dir,img_dest_dir,str(i),v,lock))
         th.start()
         all_process.append(th)
     for th in all_process:
         th.join()
 
-
+    merge_annotations(img_dest_dir)
