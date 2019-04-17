@@ -272,8 +272,11 @@ netD_B_train_function = Model([real_B, _fake_B], Lambda(netD_loss)([netD_B_predi
 netD_B_train_function.compile('adam', 'mae')
 
 
-def load_data(file_pattern):
-    return glob.glob(file_pattern)
+def load_data(file_pattern,max_files=10000):
+    all_files = glob.glob(file_pattern)
+    if len(all_files)>max_files:
+        all_files = all_files[:max_files]
+    return all_files
 
 
 def read_image(img, loadsize=load_size, imagesize=image_size):
@@ -488,7 +491,7 @@ while epoch_count < how_many_epochs:
         netD_A_train_function.save_weights(save_name.format('tf_D_A_train_weights'))
         netD_B_train_function.save_weights(save_name.format('tf_D_B_train_weights'))
 
-load_name = dpath + '{}' + '5.h5'
+load_name = dpath + '{}' + '{}.h5'.format(how_many_epochs)
 netG_A.load_weights(load_name.format('tf_GA_weights'))
 netG_B.load_weights(load_name.format('tf_GB_weights'))
 netD_A.load_weights(load_name.format('tf_DA_weights'))
