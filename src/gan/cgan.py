@@ -21,7 +21,7 @@ from keras_contrib.layers.normalization.instancenormalization import InstanceNor
 import  sys
 
 
-if(len(sys.argv)!=0):
+if(len(sys.argv)!=4):
     print("The usage is <fake_img dire> <actual_img_dir> <save_path>")
     exit(1)
 
@@ -343,9 +343,6 @@ def minibatchAB(dataA, dataB, batch_size):
         tmpsize = yield max(ep1, ep2), A, B
 
 
-from IPython.display import display
-
-
 def display_image(X, rows=1):
     assert X.shape[0] % rows == 0
     int_X = ((X * 127.5 + 127.5).clip(0, 255).astype('uint8'))
@@ -354,7 +351,7 @@ def display_image(X, rows=1):
     pil_X = Image.fromarray(int_X)
     t = str(round(time.time()))
     pil_X.save(dpath + 'results/' + t, 'JPEG')
-    display(pil_X)
+
 
 
 train_batch = minibatchAB(train_A, train_B, 6)
@@ -442,7 +439,7 @@ class ImagePool():
 K.learning_phase()
 
 import time
-from IPython.display import clear_output
+
 
 time_start = time.time()
 how_many_epochs = 1000
@@ -477,7 +474,6 @@ while epoch_count < how_many_epochs:
     save_name = dpath + '{}' + str(iteration_count) + '.h5'
 
     if iteration_count % display_freq == 0:
-        clear_output()
         timecost = (time.time() - time_start) / 60
         print('epoch_count: {}  iter_count: {}  timecost: {}mins'.format(epoch_count, iteration_count, timecost))
         show_generator_image(val_A, val_B, netG_A, netG_B)
