@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-'''
-函数功能测试
-'''
 from algorithm import io, np, sk, da
 from algorithm import show, random, listdir, mark_boundaries, loga
 from algorithm import getSlic, readImg
