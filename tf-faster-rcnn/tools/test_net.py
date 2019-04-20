@@ -8,17 +8,89 @@ from __future__ import division
 from __future__ import print_function
 
 import _init_paths
-from model.test import test_net
+from model.test import test_net,im_detect,test_net_single
 from model.config import cfg, cfg_from_file, cfg_from_list
-from datasets.factory import get_imdb
-import argparse
+#from datasets.factory import get_imdb
+#import argparse
 import pprint
 import time, os, sys
 
 import tensorflow as tf
-from nets.vgg16 import vgg16
+#from nets.vgg16 import vgg16
 from nets.resnet_v1 import resnetv1
-from nets.mobilenet_v1 import mobilenetv1
+#from nets.mobilenet_v1 import mobilenetv1
+import  numpy as np
+from model.nms_wrapper import nms
+import cv2
+
+
+SESS = None
+NET =  None
+ANCHORS=[4,8,16,32]
+RATIOS=[0.5,1,2]
+
+def clear():
+    global NET, SESS
+    NET = None
+    SESS = None
+
+def test_single2(file_name,model_name,num_classes=200):
+    global NET, SESS
+    if not NET:
+        NET = resnetv1(num_layers=101)
+        NET.create_architecture("TEST", num_classes+1, tag='default',
+                            anchor_scales=ANCHORS)
+    if not SESS:
+        SESS = tf.Session()
+        saver = tf.train.Saver()
+        #saver = tf.train.import_meta_graph(model_name+".meta",clear_devices=True)
+        saver.restore(SESS, model_name)
+        #init_op = tf.initialize_all_variables()
+        #SESS.run(init_op)
+    img = cv2.imread(file_name)
+    return test_net_single(img,SESS, NET)
+# Custome function to test single image
+#
+#
+def test_single(file_name,model_name,num_classes=200):
+    global NET, SESS
+    if not NET:
+        NET = resnetv1(num_layers=101)
+        NET.create_architecture("TEST", num_classes+1, tag='default',
+                            anchor_scales=ANCHORS)
+    if not SESS:
+        SESS = tf.Session()
+        saver = tf.train.Saver()
+        #saver = tf.train.import_meta_graph(model_name+".meta",clear_devices=True)
+        saver.restore(SESS, model_name)
+        #init_op = tf.initialize_all_variables()
+        #SESS.run()
+    img = cv2.imread(file_name)
+    scores,boxes = im_detect(SESS, NET, img)
+
+    CONF_THRESH = 0.8
+    NMS_THRESH = 0.3
+    result = []
+    thresh = 0.5
+    for cls_ind in range(199):
+        cls_ind += 1  # because we skipped background
+        cls_boxes = boxes[:, 4 * cls_ind:4 * (cls_ind + 1)]
+        cls_scores = scores[:, cls_ind]
+        dets = np.hstack((cls_boxes,
+                          cls_scores[:, np.newaxis])).astype(np.float32)
+        keep = nms(dets, NMS_THRESH)
+        dets = dets[keep, :]
+        inds = np.where(dets[:, -1] >= thresh)[0]
+        #print(dets[inds])
+        if len(inds) != 0:
+            #print("inde {}".format(inds))
+            #print(inds)
+            for x in range(inds.shape[0]):
+                result.append(cls_ind)
+
+
+
+    return  result
 
 def parse_args():
   """
